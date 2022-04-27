@@ -6,64 +6,32 @@ import {
 } from '@nestjs/microservices';
 import { Observable, ReplaySubject, Subject } from 'rxjs';
 import { toArray } from 'rxjs/operators';
+import { HeroService } from './hero.service';
 
 import { HeroById } from './interfaces/hero-id.interface';
 import { Hero } from './interfaces/hero.interface';
 
-interface HeroService {
-  findOne(data: HeroById): Observable<Hero>;
-  findMany(upstream: Observable<HeroById>): Observable<Hero>;
-}
-
 @Controller('hero')
-export class HeroController implements OnModuleInit {
-  private readonly items: Hero[] = [
-    { id: 1, name: 'John' },
-    { id: 2, name: 'Doe' },
-  ];
-  private heroService: HeroService;
-
-  constructor(@Inject('HERO_PACKAGE') private readonly client: ClientGrpc) {}
-
-  onModuleInit() {
-    this.heroService = this.client.getService<HeroService>('HeroService');
-  }
+export class HeroController {
+  constructor(private readonly heroService: HeroService) {}
 
   @Get()
   getMany(): Observable<Hero[]> {
-    const ids$ = new ReplaySubject<HeroById>();
-    ids$.next({ id: 1 });
-    ids$.next({ id: 2 });
-    ids$.complete();
-
-    const stream = this.heroService.findMany(ids$.asObservable());
-    return stream.pipe(toArray());
+    return this.heroService.getMany();
   }
 
   @Get(':id')
   getById(@Param('id') id: string): Observable<Hero> {
-    return this.heroService.findOne({ id: +id });
+    return this.heroService.getById(id);
   }
 
   @GrpcMethod('HeroService')
   findOne(data: HeroById): Hero {
-    return this.items.find(({ id }) => id === data.id);
+    return this.heroService.findOne(data);
   }
 
   @GrpcStreamMethod('HeroService')
-  findMany(data$: Observable<HeroById>): Observable<Hero> {
-    const hero$ = new Subject<Hero>();
-
-    const onNext = (heroById: HeroById) => {
-      const item = this.items.find(({ id }) => id === heroById.id);
-      hero$.next(item);
-    };
-    const onComplete = () => hero$.complete();
-    data$.subscribe({
-      next: onNext,
-      complete: onComplete,
-    });
-
-    return hero$.asObservable();
+  findMany(data: Observable<HeroById>): Observable<Hero> {
+    return this.heroService.findMany(data);
   }
 }
