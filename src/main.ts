@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions } from '@nestjs/microservices';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
-import { grpcClientOptions } from 'grpc-client.options';
+import { grpcClientOptions } from 'src/grpc-client.options';
 import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
@@ -16,7 +16,7 @@ async function bootstrap(): Promise<void> {
     .addTag('heroes')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('/', app, document);
 
   await app.startAllMicroservices();
   await app.listen(3001);
